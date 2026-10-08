@@ -44,7 +44,7 @@ button[disabled]{opacity:.6}
 <script>
 (function () {
   var SALT = DerzaiCrypto.fromB64('__SALT__'), IV = DerzaiCrypto.fromB64('__IV__'), ITER = __ITER__, MARK = 'DERZAI1\n';
-  var CT = null;
+  var CT = null, KEYNAME = 'derzai.key:' + '__SALT__'.slice(0, 12); // своя запись на каждую страницу
   var pw = document.getElementById('pw'), msg = document.getElementById('msg'), go = document.getElementById('go'), keep = document.getElementById('keep');
   function say(t) { msg.textContent = t; }
   function store(k, v) { try { if (v === null) localStorage.removeItem(k); else localStorage.setItem(k, v); } catch (e) {} }
@@ -81,8 +81,8 @@ button[disabled]{opacity:.6}
   function attempt(key, fromMemory) {
     var html = null;
     try { html = decrypt(key); } catch (e) { html = null; }
-    if (html) { if (keep.checked && !fromMemory) store('derzai.key', DerzaiCrypto.hex(key)); open(html); return true; }
-    if (fromMemory) store('derzai.key', null);
+    if (html) { if (keep.checked && !fromMemory) store(KEYNAME, DerzaiCrypto.hex(key)); open(html); return true; }
+    if (fromMemory) store(KEYNAME, null);
     return false;
   }
   document.getElementById('f').onsubmit = function (e) {
@@ -96,7 +96,7 @@ button[disabled]{opacity:.6}
       });
     }, 40);
   };
-  var saved = load('derzai.key');
+  var saved = load(KEYNAME);
   if (saved && saved.length === 64) { say('Открываю…'); setTimeout(function () { if (!attempt(DerzaiCrypto.unhex(saved), true)) say(''); }, 40); }
   else pw.focus();
 })();
