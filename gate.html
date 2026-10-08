@@ -47,6 +47,8 @@ button[disabled]{opacity:.6}
   var CT = null, KEYNAME = 'derzai.key:' + '__SALT__'.slice(0, 12); // своя запись на каждую страницу
   var pw = document.getElementById('pw'), msg = document.getElementById('msg'), go = document.getElementById('go'), keep = document.getElementById('keep');
   function say(t) { msg.textContent = t; }
+  // шифротекст лежит в конце страницы: на медленной сети он ещё грузится, когда пользователь уже нажал «Открыть»
+  function ready(fn) { if (document.readyState === 'complete') fn(); else window.addEventListener('load', fn); }
   function store(k, v) { try { if (v === null) localStorage.removeItem(k); else localStorage.setItem(k, v); } catch (e) {} }
   function load(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
   function ct() { if (!CT) CT = DerzaiCrypto.fromB64(document.getElementById('ct').textContent.replace(/\s+/g, '')); return CT; }
@@ -89,15 +91,18 @@ button[disabled]{opacity:.6}
     e.preventDefault();
     var p = pw.value;
     if (!p) { say('Введите пароль'); return; }
-    go.disabled = true; say('Проверяю пароль…');
-    setTimeout(function () {
-      derive(p, function (key) {
-        if (!attempt(key, false)) { go.disabled = false; say('Пароль не подошёл. Проверьте раскладку и попробуйте ещё раз.'); pw.select(); }
-      });
-    }, 40);
+    go.disabled = true; say(document.readyState === 'complete' ? 'Проверяю пароль…' : 'Страница ещё загружается, секунду…');
+    ready(function () {
+      say('Проверяю пароль…');
+      setTimeout(function () {
+        derive(p, function (key) {
+          if (!attempt(key, false)) { go.disabled = false; say('Пароль не подошёл. Проверьте раскладку и попробуйте ещё раз.'); pw.select(); }
+        });
+      }, 40);
+    });
   };
   var saved = load(KEYNAME);
-  if (saved && saved.length === 64) { say('Открываю…'); setTimeout(function () { if (!attempt(DerzaiCrypto.unhex(saved), true)) say(''); }, 40); }
+  if (saved && saved.length === 64) { say('Открываю…'); ready(function () { setTimeout(function () { if (!attempt(DerzaiCrypto.unhex(saved), true)) say(''); }, 40); }); }
   else pw.focus();
 })();
 </script>
